@@ -12,10 +12,11 @@ File: main.cpp
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
 
-string checkMerge(string, string, string);
+bool checkMerge(string, string, string *);
 
 int main() {
 
@@ -27,82 +28,74 @@ int main() {
 	cin >> outputFileName;
 
 	ifstream inFile(inputFileName);
+	ofstream outFile(outputFileName);
 	string line;
 	string s1, s2, s;
-	string result;
-	while (getline(inFile, line)) {
-		// Get the three strings
-		s1 = line;
-		getline(inFile, line);
-		s2 = line;
-		getline(inFile, line);
-		s = line;
-
-		result = checkMerge(s1, s2, s);
+	bool result;
+	while (getline(inFile, s1) && getline(inFile, s2) && getline(inFile, s)) {
+		cout << s1 << endl << s2 << endl << s << endl;
+		if (checkMerge(s1, s2, &s)) {
+			outFile << s << endl;
+		} else {
+			outFile << "*** NOT A MERGE ***" << endl;
+		}
 	}
 
 	inFile.close();
+	outFile.close();
 
-	system("pause");
 	return 0;
 }
 
-short M[1000][1000]; // Make 1000x1000 since that is the maximum size
-string checkMerge(string s1, string s2, string s) {
-	string result = "";
+char M[1001][1001]; // Make 1001x1001 since that is the maximum size
+bool checkMerge(string s1, string s2, string * s) {
+	if (s1.length() + s2.length() != s->length()) {
+		return false;
+	}
+
+	// Empty M
+	for (int n = 0; n < 1001; ++n) {
+		for (int m = 0; m < 1001; ++m) {
+			M[n][m] = 0;
+		}
+	}
 
 	// Fill out M
-	for (int n = 0; n < 1000; ++n) {
-		for (int m = 0; m < 1000; ++m) {
-			M[n][m] = n + m;
+	char s1Char = 'f', s2Char = 's';
+	M[0][0] = 1;
+	for (int i = 0; (unsigned) i <= s2.length(); ++i) {
+		for (int j = 0; (unsigned) j <= s1.length(); ++j) {
+			if (!M[i][j]) {
+				continue;
+			}
+			if (s1[j] == (*s)[i + j] && !M[i][j + 1]) {
+				M[i][j + 1] = s1Char;
+			}
+			if (s2[i] == (*s)[i + j] && !M[i + 1][j]) {
+				M[i + 1][j] = s2Char;
+			}
 		}
 	}
 
-	// Use M to check if s is a proper merge of s1 and s2
-	int i = 0, j = 0, index;
-	while ((unsigned int) i <= s1.length() && (unsigned int) j <= s2.length()) {
-		index = M[i][j];
-
-		// Check successful case
-		if (index == s.length() - 1) {
-			// Add last character
-			if (s[index] == s1[i]) {
-				result += s1[i] - 32; // Make uppercase
-			} else if (s[index] == s2[j]) {
-				result += s2[j];
-			}
-			return result;
+	// Walk up matrix to see if s is a valid merge
+	int i = s2.length(), j = s1.length(), index;
+	while (i + j > 0) {
+		if (!M[i][j]) {
+			return false;
 		}
 
-		// If they are the same, increase the index that is lower
-		if (s[index] == s1[i] && s[index] == s2[j]) {
-			if (i > j) {
-				result += s2[j++];
-			} else {
-				result += s1[i++] - 32; // Make uppercase
-			}
-			continue;
+		index = i + j - 1;
+		if (M[i][j] == s1Char) {
+			(*s)[index] -= 32; // Convert to uppercase if from s1
 		}
 
-		// Otherwise, check each individual index
-		if (s[index] == s1[i]) {
-			result += s1[i++] - 32; // Make uppercase
-		} else if (s[index] == s2[j]) {
-			result += s2[j++];
-		} else {
-			// Check edge case (s1 = aabc, s2 = aabd, s = aaaabdbc)
-			++j;
+		// Prioritize first string
+		if (M[i - 1][j]) {
 			--i;
-			if (i >= 0 && s[index] == s1[i]) {
-				result.pop_back();
-				result += s1[i++] - 32; // Make uppercase
-			} else if ((unsigned int) j < s2.length() && s[index] == s2[j]) {
-				result.pop_back();
-				result += s2[j++];
-			} else {
-				return "";
-			}
+		} else if (M[i][j - 1]) {
+			--j;
 		}
 	}
-	return "";
+
+	return true;
 }
