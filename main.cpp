@@ -29,11 +29,9 @@ int main() {
 
 	ifstream inFile(inputFileName);
 	ofstream outFile(outputFileName);
-	string line;
 	string s1, s2, s;
-	bool result;
 	while (getline(inFile, s1) && getline(inFile, s2) && getline(inFile, s)) {
-		cout << s1 << endl << s2 << endl << s << endl;
+		// Write appropriate output based on result of checkMerge
 		if (checkMerge(s1, s2, &s)) {
 			outFile << s << endl;
 		} else {
@@ -53,33 +51,34 @@ bool checkMerge(string s1, string s2, string * s) {
 		return false;
 	}
 
-	// Empty M
+	// Reset M
 	for (int n = 0; n < 1001; ++n) {
 		for (int m = 0; m < 1001; ++m) {
 			M[n][m] = 0;
 		}
 	}
+	M[0][0] = 1;
 
 	// Fill out M
 	char s1Char = 'f', s2Char = 's';
-	M[0][0] = 1;
-	for (int i = 0; (unsigned) i <= s2.length(); ++i) {
-		for (int j = 0; (unsigned) j <= s1.length(); ++j) {
+	for (int j = 0; (unsigned) j <= s2.length(); ++j) {
+		for (int i = 0; (unsigned) i <= s1.length(); ++i) {
 			if (!M[i][j]) {
 				continue;
 			}
-			if (s1[j] == (*s)[i + j] && !M[i][j + 1]) {
-				M[i][j + 1] = s1Char;
+			if (s1[i] == (*s)[i + j] && !M[i + 1][j]) {
+				M[i + 1][j] = s1Char;
 			}
-			if (s2[i] == (*s)[i + j] && !M[i + 1][j]) {
-				M[i + 1][j] = s2Char;
+			if (s2[j] == (*s)[i + j] && !M[i][j + 1]) {
+				M[i][j + 1] = s2Char;
 			}
 		}
 	}
 
 	// Walk up matrix to see if s is a valid merge
-	int i = s2.length(), j = s1.length(), index;
+	int i = s1.length(), j = s2.length(), index;
 	while (i + j > 0) {
+		// Check failed case
 		if (!M[i][j]) {
 			return false;
 		}
@@ -90,10 +89,10 @@ bool checkMerge(string s1, string s2, string * s) {
 		}
 
 		// Prioritize first string
-		if (M[i - 1][j]) {
-			--i;
-		} else if (M[i][j - 1]) {
+		if (j > 0 && M[i][j - 1]) {
 			--j;
+		} else if (i > 0 && M[i - 1][j]) {
+			--i;
 		}
 	}
 
